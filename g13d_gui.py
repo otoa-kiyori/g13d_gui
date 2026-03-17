@@ -55,22 +55,22 @@ G13_KEYS = [
 # ─── Colors ───────────────────────────────────────────────────────────────────
 
 COLORS = {
-    "bg":           "#1a1a1a",
-    "device":       "#252525",
-    "g_key":        "#1e2d4a",
-    "g_key_border": "#2a4a7a",
-    "m_key":        "#3a2500",
-    "m_key_border": "#7a5500",
-    "l_key":        "#2a1a3a",
-    "l_key_border": "#5a3a7a",
-    "stick":        "#0f2e1a",
-    "stick_border": "#1a6a3a",
-    "special":      "#2a2a2a",
-    "special_border":"#555555",
-    "text":         "#dddddd",
+    "bg":           "#f0f0f0",
+    "device":       "#e0e0e0",
+    "g_key":        "#c8daf5",
+    "g_key_border": "#6a9fd8",
+    "m_key":        "#fde8b0",
+    "m_key_border": "#c8960a",
+    "l_key":        "#dac8f0",
+    "l_key_border": "#9a6ad8",
+    "stick":        "#b8e8c8",
+    "stick_border": "#2a9a4a",
+    "special":      "#d8d8d8",
+    "special_border":"#888888",
+    "text":         "#1a1a1a",
     "text_dim":     "#888888",
-    "unbound":      "#444444",
-    "highlight":    "#c8a020",
+    "unbound":      "#bbbbbb",
+    "highlight":    "#c87000",
 }
 
 # ─── Parser ───────────────────────────────────────────────────────────────────
@@ -278,8 +278,9 @@ def _key_style(bg: str, border: str, text_color: str = COLORS["text"]) -> str:
             border-radius: 4px;
             color: {text_color};
             font-family: 'Courier New', monospace;
-            font-size: 8px;
-            padding: 1px;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px;
         }}
         QPushButton:hover {{
             background-color: {border};
@@ -352,7 +353,7 @@ class DeviceCanvas(QWidget):
         self.on_key_click = on_key_click
         self.setFixedSize(640, 320)
         self.buttons: dict[str, QPushButton] = {}
-        self.setStyleSheet(f"background-color: {COLORS['device']}; border-radius: 16px;")
+        self.setStyleSheet(f"background-color: {COLORS['device']}; border-radius: 16px; border: 2px solid #aaaaaa;")
 
         for key, x, y, w, h in self.KEY_POSITIONS:
             btn = QPushButton(self)
@@ -574,17 +575,21 @@ if __name__ == "__main__":
     app.setApplicationName("g13d_gui")
     app.setOrganizationName("otoa-kiyori")
 
-    # Dark palette matching the G13's aesthetic
+    # Light palette
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Window,          QColor(COLORS["bg"]))
     palette.setColor(QPalette.ColorRole.WindowText,      QColor(COLORS["text"]))
-    palette.setColor(QPalette.ColorRole.Base,            QColor("#111111"))
-    palette.setColor(QPalette.ColorRole.AlternateBase,   QColor("#1a1a1a"))
-    palette.setColor(QPalette.ColorRole.Button,          QColor("#2a2a2a"))
+    palette.setColor(QPalette.ColorRole.Base,            QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.AlternateBase,   QColor("#f5f5f5"))
+    palette.setColor(QPalette.ColorRole.Button,          QColor("#e0e0e0"))
     palette.setColor(QPalette.ColorRole.ButtonText,      QColor(COLORS["text"]))
     palette.setColor(QPalette.ColorRole.Highlight,       QColor(COLORS["highlight"]))
-    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#000000"))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#ffffff"))
     app.setPalette(palette)
+
+    font = app.font()
+    font.setPointSize(11)
+    app.setFont(font)
 
     win = MainWindow()
     win.show()
