@@ -308,52 +308,76 @@ def zone_for(key: str) -> str:
 
 # ─── Device Canvas ────────────────────────────────────────────────────────────
 
+# Column x-positions for 7 G-key columns (64px wide, 4px gap)
+_GX = [10 + i * 68 for i in range(7)]  # 10, 78, 146, 214, 282, 350, 418
+_GW, _GH = 64, 42
+
 class DeviceCanvas(QWidget):
-    """Visual G13 layout — absolute-positioned key buttons."""
+    """
+    Visual G13 layout matching the physical device (top→bottom):
 
-    # (key_name, x, y, w, h)  — all in pixels on 760×380 canvas
+      [LCD display area]
+      [LEFT][L1][L2][L3][L4][BD]      ← 1+4+1 below LCD
+      [M1 ][M2 ][M3 ][MR]            ← mode/macro keys
+      [G1 ][G2 ][G3 ][G4 ][G5 ][G6 ][G7 ]
+      [G8 ][G9 ][G10][G11][G12][G13][G14]
+      [G15][G16][G17][G18][G19]
+      [joystick]          [G20][G21][G22]
+    """
+
+    # (key_name, x, y, w, h)
     KEY_POSITIONS = [
-        # ── Mode buttons (top left) ──
-        ("M1",   10,  8, 42, 22), ("M2",  56,  8, 42, 22),
-        ("M3",  102,  8, 42, 22), ("MR", 148,  8, 42, 22),
+        # ── Row 1: 1+4+1 buttons below LCD ──
+        ("LEFT",  10,  12,  60, 32),
+        ("L1",    76,  12,  60, 32), ("L2", 142,  12,  60, 32),
+        ("L3",   208,  12,  60, 32), ("L4", 274,  12,  60, 32),
+        ("BD",   340,  12,  60, 32),
 
-        # ── G row 1 ──
-        ("G1",   10, 50, 52, 36), ("G2",  66, 50, 52, 36), ("G3", 122, 50, 52, 36),
-        ("G4",  178, 50, 52, 36), ("G5", 234, 50, 52, 36), ("G6", 290, 50, 52, 36),
-        ("G7",  346, 50, 52, 36),
+        # ── Row 2: Mode / macro keys ──
+        ("M1",   10,  50,  60, 32), ("M2",  76,  50,  60, 32),
+        ("M3",  142,  50,  60, 32), ("MR", 208,  50,  60, 32),
 
-        # ── G row 2 ──
-        ("G8",   10, 92, 52, 36), ("G9",  66, 92, 52, 36), ("G10",122, 92, 52, 36),
-        ("G11", 178, 92, 52, 36), ("G12",234, 92, 52, 36), ("G13",290, 92, 52, 36),
-        ("G14", 346, 92, 52, 36),
+        # ── G rows 1–3 ──
+        ("G1",  _GX[0], 92, _GW, _GH), ("G2",  _GX[1], 92, _GW, _GH),
+        ("G3",  _GX[2], 92, _GW, _GH), ("G4",  _GX[3], 92, _GW, _GH),
+        ("G5",  _GX[4], 92, _GW, _GH), ("G6",  _GX[5], 92, _GW, _GH),
+        ("G7",  _GX[6], 92, _GW, _GH),
 
-        # ── G row 3 ──
-        ("G15",  10,134, 52, 36), ("G16", 66,134, 52, 36), ("G17",122,134, 52, 36),
-        ("G18", 178,134, 52, 36), ("G19",234,134, 52, 36),
+        ("G8",  _GX[0],138, _GW, _GH), ("G9",  _GX[1],138, _GW, _GH),
+        ("G10", _GX[2],138, _GW, _GH), ("G11", _GX[3],138, _GW, _GH),
+        ("G12", _GX[4],138, _GW, _GH), ("G13", _GX[5],138, _GW, _GH),
+        ("G14", _GX[6],138, _GW, _GH),
 
-        # ── Bottom row: G20-G22 ──
-        ("G20", 456,280, 52, 36), ("G21",512,280, 52, 36), ("G22",568,280, 52, 36),
+        ("G15", _GX[0],184, _GW, _GH), ("G16", _GX[1],184, _GW, _GH),
+        ("G17", _GX[2],184, _GW, _GH), ("G18", _GX[3],184, _GW, _GH),
+        ("G19", _GX[4],184, _GW, _GH),
 
-        # ── Thumb / L keys ──
-        ("L1",  10, 220, 42, 36), ("L2",  56, 220, 42, 36),
-        ("L3",  10, 260, 42, 36), ("L4",  56, 260, 42, 36),
+        # ── Bottom right: G20-G22 (aligned with G17-G19) ──
+        ("G20", _GX[4],234, _GW, _GH),
+        ("G21", _GX[5],234, _GW, _GH),
+        ("G22", _GX[6],234, _GW, _GH),
 
-        # ── Special flat buttons ──
-        ("LEFT",130, 220, 52, 28), ("BD",  186, 220, 52, 28),
-
-        # ── Stick zone buttons ──
-        ("STICK_UP",   148, 190, 44, 26),
-        ("STICK_DOWN", 148, 248, 44, 26),
-        ("STICK_LEFT", 100, 220, 44, 26),
-        ("STICK_RIGHT",196, 220, 44, 26),
+        # ── Bottom left: joystick zone ──
+        ("STICK_UP",    54, 234,  48, 30),
+        ("STICK_LEFT",   4, 268,  48, 30), ("STICK_RIGHT", 106, 268, 48, 30),
+        ("STICK_DOWN",  54, 302,  48, 30),
     ]
 
     def __init__(self, on_key_click, parent=None):
         super().__init__(parent)
         self.on_key_click = on_key_click
-        self.setFixedSize(640, 320)
+        self.setFixedSize(500, 345)
         self.buttons: dict[str, QPushButton] = {}
         self.setStyleSheet(f"background-color: {COLORS['device']}; border-radius: 16px; border: 2px solid #aaaaaa;")
+
+        # LCD display label (decorative)
+        lcd = QLabel("[ LCD ]", self)
+        lcd.setGeometry(344, 50, 148, 38)
+        lcd.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lcd.setStyleSheet(
+            "background-color: #b8d8a0; color: #1a3a0a; border: 2px solid #6a9a4a;"
+            "border-radius: 4px; font-family: monospace; font-size: 10px; font-weight: bold;"
+        )
 
         for key, x, y, w, h in self.KEY_POSITIONS:
             btn = QPushButton(self)
