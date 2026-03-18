@@ -300,84 +300,98 @@ ZONE_STYLES = {
 }
 
 def zone_for(key: str) -> str:
-    if key.startswith("G"):      return "g"
-    if key.startswith("M"):      return "m"
-    if key.startswith("L"):      return "l"
-    if key.startswith("STICK"):  return "stick"
+    if key.startswith("G"):                return "g"
+    if key.startswith("M"):                return "m"
+    if key in ("L1","L2","L3","L4"):      return "l"
+    if key.startswith("STICK"):            return "stick"
     return "special"
 
 # ─── Device Canvas ────────────────────────────────────────────────────────────
 
-# Column x-positions for 7 G-key columns (64px wide, 4px gap)
-_GX = [10 + i * 68 for i in range(7)]  # 10, 78, 146, 214, 282, 350, 418
-_GW, _GH = 64, 42
+# Column x-positions for 7 G-key columns (64px wide, 4px gap → 68px pitch)
+_GX = [18 + i * 81 for i in range(7)]  # 18, 99, 180, 261, 342, 423, 504
+_GW, _GH = 77, 42                       # 1.2× wider than original 64px
+_LX = 114  # L/M row start x — centers group at x=300 (114 + 372/2)
+_LW = 90   # L/M button width (stays 90px)
+_LP = 94   # L/M pitch (90px + 4px gap)
+
+# Human-readable display names for buttons on the canvas
+KEY_DISPLAY = {
+    "STICK_UP":    "↑",
+    "STICK_DOWN":  "↓",
+    "STICK_LEFT":  "←",
+    "STICK_RIGHT": "→",
+}
 
 class DeviceCanvas(QWidget):
     """
-    Visual G13 layout matching the physical device (top→bottom):
+    Visual G13 layout (top→bottom, all rows centered at x=246):
 
-      [LCD display area]
-      [LEFT][L1][L2][L3][L4][BD]      ← 1+4+1 below LCD
-      [M1 ][M2 ][M3 ][MR]            ← mode/macro keys
+      [TOP][L1 ][L2 ][L3 ][L4 ]       ← round + 4 thumb keys
+           [M1 ][M2 ][M3 ][MR ]       ← mode keys, right below L row
       [G1 ][G2 ][G3 ][G4 ][G5 ][G6 ][G7 ]
       [G8 ][G9 ][G10][G11][G12][G13][G14]
-      [G15][G16][G17][G18][G19]
-      [joystick]          [G20][G21][G22]
+           [G15][G16][G17][G18][G19]   ← starts below G9
+                [G20][G21][G22]        ← below G16-G18
+                      [LEFT][ ↑ ]   ← LEFT + STICK_UP, right side
+                      [ ← ]  [ → ]  ← STICK_LEFT / STICK_RIGHT
+                           [ ↓ ]    ← STICK_DOWN
+                           [ BD]    ← flat button below stick
     """
 
     # (key_name, x, y, w, h)
     KEY_POSITIONS = [
-        # ── Row 1: 1+4+1 buttons below LCD ──
-        ("LEFT",  10,  12,  60, 32),
-        ("L1",    76,  12,  60, 32), ("L2", 142,  12,  60, 32),
-        ("L3",   208,  12,  60, 32), ("L4", 274,  12,  60, 32),
-        ("BD",   340,  12,  60, 32),
+        # ── Row 1: TOP (round) + L1-L4 ──
+        # TOP y=32 → center=54, which is the midpoint of the L/M gap (L bottom=52, M top=56)
+        ("TOP",  57,          32, 53, 44),
+        ("L1",  _LX,          20, _LW, 32), ("L2", _LX+_LP,   20, _LW, 32),
+        ("L3",  _LX+_LP*2,    20, _LW, 32), ("L4", _LX+_LP*3, 20, _LW, 32),
 
-        # ── Row 2: Mode / macro keys ──
-        ("M1",   10,  50,  60, 32), ("M2",  76,  50,  60, 32),
-        ("M3",  142,  50,  60, 32), ("MR", 208,  50,  60, 32),
+        # ── Row 2: M keys, right below L row ──
+        ("M1",  _LX,          56, _LW, 32), ("M2", _LX+_LP,   56, _LW, 32),
+        ("M3",  _LX+_LP*2,    56, _LW, 32), ("MR", _LX+_LP*3, 56, _LW, 32),
 
-        # ── G rows 1–3 ──
-        ("G1",  _GX[0], 92, _GW, _GH), ("G2",  _GX[1], 92, _GW, _GH),
-        ("G3",  _GX[2], 92, _GW, _GH), ("G4",  _GX[3], 92, _GW, _GH),
-        ("G5",  _GX[4], 92, _GW, _GH), ("G6",  _GX[5], 92, _GW, _GH),
-        ("G7",  _GX[6], 92, _GW, _GH),
+        # ── G rows ──
+        ("G1",  _GX[0], 98, _GW, _GH), ("G2",  _GX[1], 98, _GW, _GH),
+        ("G3",  _GX[2], 98, _GW, _GH), ("G4",  _GX[3], 98, _GW, _GH),
+        ("G5",  _GX[4], 98, _GW, _GH), ("G6",  _GX[5], 98, _GW, _GH),
+        ("G7",  _GX[6], 98, _GW, _GH),
 
-        ("G8",  _GX[0],138, _GW, _GH), ("G9",  _GX[1],138, _GW, _GH),
-        ("G10", _GX[2],138, _GW, _GH), ("G11", _GX[3],138, _GW, _GH),
-        ("G12", _GX[4],138, _GW, _GH), ("G13", _GX[5],138, _GW, _GH),
-        ("G14", _GX[6],138, _GW, _GH),
+        ("G8",  _GX[0], 146, _GW, _GH), ("G9",  _GX[1], 146, _GW, _GH),
+        ("G10", _GX[2], 146, _GW, _GH), ("G11", _GX[3], 146, _GW, _GH),
+        ("G12", _GX[4], 146, _GW, _GH), ("G13", _GX[5], 146, _GW, _GH),
+        ("G14", _GX[6], 146, _GW, _GH),
 
-        ("G15", _GX[0],184, _GW, _GH), ("G16", _GX[1],184, _GW, _GH),
-        ("G17", _GX[2],184, _GW, _GH), ("G18", _GX[3],184, _GW, _GH),
-        ("G19", _GX[4],184, _GW, _GH),
+        # G15 starts below G9 (col 1), G19 ends below G13 (col 5)
+        ("G15", _GX[1], 194, _GW, _GH), ("G16", _GX[2], 194, _GW, _GH),
+        ("G17", _GX[3], 194, _GW, _GH), ("G18", _GX[4], 194, _GW, _GH),
+        ("G19", _GX[5], 194, _GW, _GH),
 
-        # ── Bottom right: G20-G22 (aligned with G17-G19) ──
-        ("G20", _GX[4],234, _GW, _GH),
-        ("G21", _GX[5],234, _GW, _GH),
-        ("G22", _GX[6],234, _GW, _GH),
+        # G20-G22 below G16-G18 (cols 2-4)
+        ("G20", _GX[2], 244, _GW, _GH),
+        ("G21", _GX[3], 244, _GW, _GH),
+        ("G22", _GX[4], 244, _GW, _GH),
 
-        # ── Bottom left: joystick zone ──
-        ("STICK_UP",    54, 234,  48, 30),
-        ("STICK_LEFT",   4, 268,  48, 30), ("STICK_RIGHT", 106, 268, 48, 30),
-        ("STICK_DOWN",  54, 302,  48, 30),
+        # ── Joystick cluster: 2×2 grid, right side, below G20-G22 ──
+        # Each button 104px wide (2× original 52px); grid anchored at x=384
+        # Row 1: LEFT | STICK_UP
+        # Row 2: STICK_LEFT | STICK_RIGHT
+        # Row 3: STICK_DOWN (centered under gap)
+        # Row 4: BD
+        ("LEFT",         384, 296, 104, 34),
+        ("STICK_UP",     492, 296, 104, 34),
+        ("STICK_LEFT",   384, 334, 104, 34),
+        ("STICK_RIGHT",  492, 334, 104, 34),
+        ("STICK_DOWN",   438, 372, 104, 34),  # centered under LEFT/STICK_UP gap
+        ("BD",           438, 410, 104, 34),
     ]
 
     def __init__(self, on_key_click, parent=None):
         super().__init__(parent)
         self.on_key_click = on_key_click
-        self.setFixedSize(500, 345)
+        self.setFixedSize(600, 452)
         self.buttons: dict[str, QPushButton] = {}
         self.setStyleSheet(f"background-color: {COLORS['device']}; border-radius: 16px; border: 2px solid #aaaaaa;")
-
-        # LCD display label (decorative)
-        lcd = QLabel("[ LCD ]", self)
-        lcd.setGeometry(344, 50, 148, 38)
-        lcd.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lcd.setStyleSheet(
-            "background-color: #b8d8a0; color: #1a3a0a; border: 2px solid #6a9a4a;"
-            "border-radius: 4px; font-family: monospace; font-size: 10px; font-weight: bold;"
-        )
 
         for key, x, y, w, h in self.KEY_POSITIONS:
             btn = QPushButton(self)
@@ -404,25 +418,22 @@ class DeviceCanvas(QWidget):
                 )
 
     def _short_label(self, key: str, val: str) -> str:
-        top = key  # key name on first line
+        display = KEY_DISPLAY.get(key, key)
         if not val:
-            return f"{key}\n—"
-        # Shorten value
+            return f"{display}\n—"
         v = val.replace("KEY_LEFTCTRL+", "^").replace("KEY_LEFTSHIFT+", "⇧") \
                .replace("KEY_LEFTALT+", "⌥").replace("KEY_", "")
         if v.startswith("!profile "):
-            v = "→" + v[9:]
-        # Truncate
+            v = "»" + v[9:]
         if len(v) > 9:
             v = v[:8] + "…"
-        return f"{key}\n{v}"
+        return f"{display}\n{v}"
 
 # ─── Main Window ──────────────────────────────────────────────────────────────
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("g13d_gui — G13 Profile Configurator")
         self.profiles: dict[str, dict[str, str]] = {}
         self.current_profile = "default"
         self._load_profiles()
@@ -430,6 +441,10 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self._refresh_profile_combo()
         self._refresh_canvas()
+        self._update_title()
+
+    def _update_title(self):
+        self.setWindowTitle(f"{self.current_profile} — g13d_gui")
 
     def _load_profiles(self):
         self.profiles = parse_bind_file(BIND_FILE)
@@ -466,7 +481,6 @@ class MainWindow(QMainWindow):
         self.btn_switch = QPushButton("⚡ Switch Now")
         self.btn_switch.setToolTip("Switch G13 to this profile instantly (writes to /tmp/g13-0)")
         self.btn_switch.clicked.connect(self._switch_now)
-        self.btn_switch.setStyleSheet(f"background-color: #1a3a1a; color: #88ff88; font-weight: bold;")
         top.addWidget(self.btn_switch)
         top.addStretch()
         root.addLayout(top)
@@ -485,7 +499,6 @@ class MainWindow(QMainWindow):
         btn_save.clicked.connect(self._save)
         btn_reload = QPushButton("🔄 Save + Reload service")
         btn_reload.clicked.connect(self._save_and_reload)
-        btn_reload.setStyleSheet("background-color: #1a2a3a; color: #88aaff; font-weight: bold;")
         bot.addStretch()
         bot.addWidget(btn_save)
         bot.addWidget(btn_reload)
@@ -513,6 +526,7 @@ class MainWindow(QMainWindow):
         if name:
             self.current_profile = name
             self._refresh_canvas()
+            self._update_title()
 
     def _on_key_click(self, key: str):
         bindings = self.profiles.setdefault(self.current_profile, {})
@@ -588,9 +602,16 @@ class MainWindow(QMainWindow):
             subprocess.run(["sudo", "systemctl", "restart", "g13"], check=True, timeout=10)
             self.status.showMessage("✓ Saved and g13d service reloaded.")
         except subprocess.CalledProcessError:
-            self.status.showMessage("⚠ Save OK — service restart failed (sudo required). Run req_no_sudo first.")
+            self.status.showMessage("⚠ Save OK — service restart failed (no sudo).")
+            QMessageBox.warning(
+                self, "Reload failed",
+                "Bind file saved successfully, but restarting the g13 service requires sudo.\n\n"
+                "Restart manually:\n"
+                "  sudo systemctl restart g13"
+            )
         except Exception as e:
             self.status.showMessage(f"Reload error: {e}")
+            QMessageBox.critical(self, "Reload error", str(e))
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
